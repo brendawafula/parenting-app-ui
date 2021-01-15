@@ -9,6 +9,7 @@ import { ContactFieldService } from "./contact-field.service";
 import { RapidProFlowExport } from "./rapid-pro-export.model";
 import { CONVERSATION } from "src/app/shared/services/data/data.service";
 import { throwError } from "rxjs";
+import { ChatActionService } from "../common/chat-action.service";
 
 export type FlowStatusChange = {
   name: string;
@@ -31,7 +32,8 @@ export class OfflineChatService implements IChatService {
   constructor(
     protected http: HttpClient,
     protected contactFieldService: ContactFieldService,
-    protected settingsService: SettingsService
+    protected settingsService: SettingsService,
+    private chatActions: ChatActionService
   ) {
     this.init();
   }
@@ -43,17 +45,8 @@ export class OfflineChatService implements IChatService {
 
   private init() {
     this.loadFlowData();
-    this.settingsService
-      .getUserSetting("USE_GDRIVE_CONTENT")
-      .subscribe(async (useGDriveContent) => {
-        if (useGDriveContent === "true") {
-          const flowExportsPath =
-            "https://plh-demo1.idems.international/sheet-content/flow-export.json";
-          await this.loadExportFile(flowExportsPath);
-        }
-        this.subscribeToFlowStatusChanges();
-        this.ready$.next(true);
-      });
+    this.subscribeToFlowStatusChanges();
+    this.ready$.next(true);
   }
 
   /** Load the list of all flows defined as type 'conversation' within the hardcoded data ts file */
@@ -70,6 +63,7 @@ export class OfflineChatService implements IChatService {
   public startFlowByName(flowName: string) {
     this.messages$ = new BehaviorSubject([]);
     const flow = this.rpFlowsByName[flowName];
+    this.flowsStack = [];
     if (flow) {
       const { name, uuid } = flow;
       const status: FlowStatusChange = { name, uuid, status: "start" };
@@ -89,6 +83,8 @@ export class OfflineChatService implements IChatService {
     if (this.flowsStack.length > 0) {
       let currentFlow = this.flowsStack[this.flowsStack.length - 1];
       console.log("Sending message to current flow ", message, currentFlow.name);
+      const flow_name = currentFlow.name;
+      this.chatActions.logActionToDB({ flow_name, type: "new_message", meta: message });
       return currentFlow.sendMessage(message);
     } else {
       return throwError("No active flows to send a message to");
@@ -112,8 +108,9 @@ export class OfflineChatService implements IChatService {
           console.log("Flow stacks before event:", this.flowsStack.length);
           let latest = events[events.length - 1];
           console.log("latest status:", latest.status);
+          const flow = this.rpFlowsByName[latest.name];
           if (latest.status === "start") {
-            const flow = this.rpFlowsByName[latest.name];
+            this.chatActions.logActionToDB({ flow_name: flow.name, type: "started" });
             console.log(`%c${flow.name} START`, "background: white; color: green");
             let newFlow = new RapidProOfflineFlow(
               flow,
@@ -129,6 +126,7 @@ export class OfflineChatService implements IChatService {
             newFlow.start();
           }
           if (latest.status === "completed") {
+            this.chatActions.logActionToDB({ flow_name: flow.name, type: "completed" });
             // remove the completed flow from the stack
             this.flowsStack.pop();
             // Check if there are any other flows remaining,

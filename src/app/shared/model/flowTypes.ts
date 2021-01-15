@@ -14,7 +14,6 @@ export namespace FlowTypes {
     | "completion_list"
     | "goal_list"
     | "habit_list"
-    | "reminder_list"
     | "task_list"
     | "module_list"
     | "module_page";
@@ -48,7 +47,6 @@ export namespace FlowTypes {
     flow_type: "habit_list";
     rows: Habit_listRow[];
   }
-  export interface Reminder_list extends FlowTypeWithData {}
   export interface Task_list extends FlowTypeWithData {
     flow_type: "task_list";
     rows: Task_listRow[];
@@ -108,10 +106,16 @@ export namespace FlowTypes {
     title: string;
     description: string;
     task_id: string;
-    icon_asset?: string;
-    main_image_asset?: string;
-    /** optional task to launch on click (default checkbox) */
-    launch_task?: string;
+    icon_asset: string;
+    main_image_asset: string;
+    aim_button_text: string;
+    aim_action: string;
+    suggestion_button_text?: string;
+    launch_flow_type?: string;
+    launch_flow_name?: string;
+    suggestion_flow_type?: string;
+    suggestion_flow_name?: string;
+
     _complete?: boolean;
   }
   export interface Task_listRow {
@@ -124,7 +128,6 @@ export namespace FlowTypes {
     /** when tasks require additional paremeters, such as the name of a reward, provide here */
     start_action_args?: string;
     groups_list?: string[];
-    evaluation?: string;
     label?: string;
     requires_list?: string[];
   }
@@ -141,7 +144,7 @@ export namespace FlowTypes {
   /** Format of conversation rows post processing */
   export interface ConversationRow {
     row_id?: string | number;
-    type: "start_new_flow" | "send_message" | "story_message" | "go_to" | "save_value" | "exit";
+    type: "start_new_flow" | "send_message" | "story_message" | "go_to" | "save_value" | "exit" | "mark_as_completed" | "split_random";
     from?: string | number;
     condition?: string | number;
     condition_var?: string;

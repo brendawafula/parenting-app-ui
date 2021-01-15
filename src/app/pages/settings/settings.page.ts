@@ -1,4 +1,4 @@
-import { Component, OnChanges, OnInit, SimpleChanges } from "@angular/core";
+import { Component } from "@angular/core";
 import { Router } from "@angular/router";
 import { DbService } from "src/app/shared/services/db/db.service";
 import { LocalStorageService } from "src/app/shared/services/local-storage/local-storage.service";
@@ -56,7 +56,7 @@ export class SettingsPage {
   openWelcomeFlow() {
     this.localStorageService.setBoolean("weclome_skipped", false);
     this.localStorageService.setBoolean("weclome_finished", false);
-    this.router.navigateByUrl("/chat/flow/Welcome_Intro");
+    this.router.navigateByUrl("/chat/Welcome_Intro");
   }
 
   selectThemeName(themeName: string) {
@@ -74,15 +74,15 @@ export class SettingsPage {
 
   resetApp() {
     this.localStorageService.clear();
-    this.dbService.db.delete().then(() => {
+    this.dbService.deleteDatabase().then(() => {
       location.reload();
     });
   }
 
   launchFlowByName(flowName: string) {
-    this.router.navigateByUrl("/chat/flow/" + flowName);
+    this.router.navigateByUrl("/chat/" + flowName);
   }
   launchTipFlowByName(flowName: string) {
-    this.router.navigateByUrl("/tips/flow/" + flowName);
+    this.router.navigateByUrl("/tips/" + flowName);
   }
 }

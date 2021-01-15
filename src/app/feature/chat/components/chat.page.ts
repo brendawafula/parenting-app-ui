@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, Input, ViewChild, ElementRef } from "@angular/core";
+import { Component, ChangeDetectorRef, Input, ViewChild, ElementRef, ViewEncapsulation } from "@angular/core";
 import { AnimationOptions } from "ngx-lottie";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ChatMessage, ChatResponseOption, ResponseCustomAction, IChatService } from "../models";
@@ -15,6 +15,7 @@ import { ContactFieldService } from "../services/offline/contact-field.service";
   selector: "app-chat",
   templateUrl: "./chat.page.html",
   styleUrls: ["./chat.page.scss"],
+  encapsulation: ViewEncapsulation.None
 })
 export class ChatPage {
   messages: ChatMessage[] = [];
@@ -45,7 +46,7 @@ export class ChatPage {
   character: "guide" | "egg" = "guide";
   messageSubscription: Subscription;
   chatViewType: "normal" | "story" = "normal";
-  chatService: IChatService;
+  chatService: OfflineChatService;
   isModal: boolean;
   latestFlowEvent: FlowStatusChange;
   showFlowName: boolean = false;
@@ -92,7 +93,7 @@ export class ChatPage {
       // 2020-11-25 - Online chat disabled here and in settings until tested working
       // const useOfflineChat = await this.settingsService.getUserSetting("USE_OFFLINE_CHAT").toPromise();
       const useOfflineChat = true;
-      this.chatService = useOfflineChat ? this.offlineChatService : this.onlineChatService;
+      this.chatService = useOfflineChat ? this.offlineChatService : this.onlineChatService as any;
     }
     this.offlineChatService.botTyping$.subscribe((botTyping) => {
       this.botTyping = botTyping;
@@ -115,15 +116,17 @@ export class ChatPage {
       header: this.lastReceivedMsg.text,
       inputs: [
         {
-          type: "text"
-        }
+          type: "text",
+        },
       ],
-      buttons: [{
-        text: 'Submit',
-        handler: (value) => {
-          this.sendCustomOption(value[0]);
-        }
-      }]
+      buttons: [
+        {
+          text: "Submit",
+          handler: (value) => {
+            this.sendCustomOption(value[0]);
+          },
+        },
+      ],
     });
     await alert.present();
   }
@@ -147,10 +150,10 @@ export class ChatPage {
     this.character = queryParams["character"] || "guide";
   }
 
-  private async startFlow(flowName: string) {
+  private async startFlow(flow_name: string) {
     await this.chatService.ready();
-    if (flowName) {
-      this.chatService.startFlowByName(flowName);
+    if (flow_name) {
+      this.chatService.startFlowByName(flow_name);
       this.messageSubscription = this.chatService.messages$.subscribe((messages) => {
         if (messages.length > 0) {
           const latestMessage = messages[messages.length - 1];
@@ -201,9 +204,15 @@ export class ChatPage {
     } else {
       this.responseOptions = [];
     }
-    setTimeout(() => {
-      this.chatEndDiv.nativeElement.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 50);
+    let scrollDelay = 100;
+    if ((message.attachments && message.attachments.length > 0) || message.innerImageUrl) {
+      scrollDelay = 1000;
+    }
+    if (this.chatEndDiv) {
+      setTimeout(() => {
+        this.chatEndDiv.nativeElement.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, scrollDelay);
+    }
     this.cd.detectChanges();
   }
 
@@ -248,7 +257,14 @@ export class ChatPage {
     if (customAction) {
       this.doCustomResponseAction(option.customAction);
     }
-    this.onNewMessage({ text, sender: "user" });
+    let newMsg: ChatMessage = { text, sender: "user" };
+    if (option.hideText) {
+      newMsg.hideText = true;
+    }
+    if (option.imageUrl) {
+      newMsg.innerImageUrl = option.imageUrl;
+    }
+    this.onNewMessage(newMsg);
     this.chatService.sendMessage({ text, sender: "user" });
     this.messagesSent += 1;
   }
@@ -268,7 +284,6 @@ export class ChatPage {
   }
 
   skipFlow() {
-    // this.localStorageService.setBoolean("welcome_skipped", true);
     this.router.navigateByUrl("/home");
   }
 

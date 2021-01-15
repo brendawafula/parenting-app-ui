@@ -24,7 +24,7 @@ export class TasksService {
    ************************************************************************/
   /** Read database objects and evaluate full task lists */
   public async loadTasks() {
-    const actionHistory = await this.dbService.table<any>("taskActions").toArray();
+    const actionHistory = await this.dbService.table<any>("task_actions").toArray();
     const actionHistoryHash = arrayToHashmapArray<ITaskAction>(actionHistory, "task_id");
     const allTasks = this.processTasksList(actionHistoryHash);
     const userTasks = this.processUserTasksList(allTasks, actionHistoryHash);
@@ -52,8 +52,6 @@ export class TasksService {
         start_action_args: t.start_action_args || null,
         groups: stringToArray(t.groups),
         requires: stringToArray(t.requires),
-        // TODO - decide how to foramt/handle evaluation functions
-        evaluation: t.evaluation || null,
         actionHistory: actionHistoryHash[t.id],
       };
       return task;

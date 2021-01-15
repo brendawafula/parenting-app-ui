@@ -2,7 +2,6 @@ import { Component, OnInit, ViewEncapsulation } from "@angular/core";
 import { ModalController } from "@ionic/angular";
 import { AnimModalComponent } from "./anim-modal/anim-modal.component";
 import { TasksService } from "../services/tasks.service";
-import { TaskActionsService } from "../services/task-actions.service";
 
 @Component({
   selector: "plh-goals",
@@ -12,32 +11,28 @@ import { TaskActionsService } from "../services/task-actions.service";
 })
 export class GoalsPage implements OnInit {
   dataLoaded = false;
-  constructor(
-    private modalController: ModalController,
-    public tasksService: TasksService,
-    public taskActionsService: TaskActionsService
-  ) {
-    // this.taskActionsService.loadActions().then(() => (this.dataLoaded = true));
-  }
+  constructor(private modalController: ModalController, public tasksService: TasksService) {}
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.openRewardModal("elder-waving")
+  }
 
   trackById(index: number, item: { id: string; [key: string]: any }) {
     return item.id;
   }
 
-  // async openRewardModal(id: string) {
-  //   const modal = await this.modalController.create({
-  //     cssClass: "anim-slide-up-modal",
-  //     component: AnimModalComponent,
-  //     componentProps: {
-  //       id,
-  //       title: "Congratulations!",
-  //       autoCloseMs: 4000,
-  //     },
-  //   });
-  //   modal.present();
-  // }
+  async openRewardModal(id: string) {
+    const modal = await this.modalController.create({
+      cssClass: "anim-slide-up-modal",
+      component: AnimModalComponent,
+      componentProps: {
+        id,
+        title: "Congratulations!",
+        autoCloseMs: 30000,
+      },
+    });
+    modal.present();
+  }
 }
 
 /*

@@ -1,19 +1,14 @@
 import { Injectable } from "@angular/core";
 import { Router } from "@angular/router";
-import { ModalController } from "@ionic/angular";
 import { FlowTypes } from "../../model";
-import { PLHDataService, TASK_LIST } from "../data/data.service";
+import { TASK_LIST } from "../data/data.service";
+import { TaskActionService } from "./task-action.service";
 
 @Injectable({ providedIn: "root" })
 export class TaskService {
   allTasksById: Hashmap<FlowTypes.Task_listRow> = {};
 
-  constructor(
-    private plhDataService: PLHDataService,
-    private modalCtrl: ModalController,
-    private router: Router
-  ) {
-    console.log("task service", this.modalCtrl);
+  constructor(private router: Router, private taskActions: TaskActionService) {
     this.processTaskList();
     this.processTaskActionHistory();
   }
@@ -24,21 +19,64 @@ export class TaskService {
 
   /**
    * When running a task we want to trigger any required actions,
-   * and add listeners to handle any completion events
    */
-  runTask(task_id: string) {
+  async startTask(task_id: string) {
     const task = this.allTasksById[task_id];
     if (!task) {
       throw new Error(`task not found: ${task_id}`);
     }
-    const { start_action, evaluation } = task;
-    if (evaluation) {
-      // TODO - add listeners/methods to know when task has been complete
-    }
+    const { start_action } = task;
     if (start_action) {
-      console.log("starting action", start_action);
+      await this.taskActions.recordTaskAction({ task_id, type: "started" });
       this.runAction(task);
     }
+  }
+
+  async evaluateTaskCompleted(task_id: string) {
+    const completionCount = await this.getTaskCompletions(task_id).count();
+    return completionCount > 0;
+  }
+
+  getTaskCompletions(task_id: string) {
+    return this.taskActions.table
+      .where("task_id")
+      .equals(task_id)
+      .filter((t) => t._completed);
+  }
+
+  async evaluateTasklocked(task_id: string) {
+    const task = this.allTasksById[task_id];
+    if (task) {
+      if (task.requires_list) {
+        const evaluations = await Promise.all(
+          task.requires_list.map(
+            async (condition) => await this.evaluateTaskRequireCondition(condition)
+          )
+        );
+        console.table(
+          task.requires_list.map((t, i) => ({ condition: t, evaluation: evaluations[i] }))
+        );
+        return !evaluations.every((evaluation) => evaluation === true);
+      } else {
+        return false;
+      }
+    } else {
+      console.error("could not find task_id", task_id);
+    }
+    return false;
+  }
+  private async evaluateTaskRequireCondition(condition: string): Promise<boolean> {
+    // e.g. first_app_launch | delay_7_day |other_condition
+    const [task_id, ...conditions] = condition.split("|").map((str) => str.trim());
+    const completions = await this.getTaskCompletions(task_id).toArray();
+    if (completions.length > 0) {
+      // TODO - handle conditions
+      console.log("TODO - evaluate conditions", completions, conditions);
+      return true;
+    }
+    // TODO - provide informative reason for failure (?)
+
+    return false;
   }
 
   /** Provide specific handlers for actions, such as starting a flow */
@@ -70,21 +108,12 @@ export class TaskService {
     this.allTasksById = allTasksById;
   }
   private async processTaskActionHistory() {
-    // this.taskActions = await this.dbService.table<ITaskAction>("taskActions").toArray();
+    // this.taskActions = await this.dbService.table<ITaskAction>("task_actions").toArray();
   }
 
   /*******************************************************************************
    * Specific action handlers
    *******************************************************************************/
-
-  // private async addTaskAction(action: ITaskAction) {
-  //   // await this.dbService.table<ITaskAction>("taskActions").put(action as ITaskAction);
-  //   // await this.loadActions();
-  // }
-  // private async removeTaskAction(id: string) {
-  //   // await this.dbService.table("taskActions").delete(id);
-  //   // await this.loadActions();
-  // }
 
   /** Launch a flow using the chat page interface, passing the flow id for starting */
   private async handleStartNewFlowAction(task: FlowTypes.Task_listRow) {
@@ -92,7 +121,7 @@ export class TaskService {
     if (!flow_name || !flow_type) {
       throw new Error("flow type or name not specified");
     }
-    this.router.navigate([flow_type, "flow", flow_name]);
+    this.router.navigate([flow_type, flow_name]);
   }
 
   private async handleGiveAwardAction(task: FlowTypes.Task_listRow) {
