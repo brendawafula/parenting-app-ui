@@ -1,4 +1,8 @@
 import { of, BehaviorSubject } from "rxjs";
+import { HABIT_LIST } from "src/app/shared/services/data/data.service";
+import { HabitService } from "src/app/shared/services/habit/habit.service";
+import { ITaskEntry } from "src/app/shared/services/task/task-action.service";
+import { arrayToHashmap } from "src/app/shared/utils/utils";
 import { ChatMessage, IRapidProMessage } from "../../models";
 import { convertFromRapidProMsg } from "../../utils/message.converter";
 import { ContactFieldService } from "./contact-field.service";
@@ -23,7 +27,8 @@ export class RapidProOfflineFlow {
     public messages$: BehaviorSubject<ChatMessage[]>,
     public flowStatus$: BehaviorSubject<FlowStatusChange[]>,
     public contactFieldService: ContactFieldService,
-    public botTyping$: BehaviorSubject<boolean>
+    public botTyping$: BehaviorSubject<boolean>,
+    public habitService: HabitService
   ) {
     console.log("flowObject", flowObject);
     this.name = flowObject.name;
@@ -247,7 +252,7 @@ export class RapidProOfflineFlow {
       let fullMatch = regexResult[0];
       let variableType = regexResult[1];
       let fieldName = regexResult[2];
-      let subfieldName = regexResult[3];
+      let subfieldName = regexResult[3] ? regexResult[3].substring(1) : null;
       switch (variableType) {
         case "contact":
         case "fields": {
@@ -256,6 +261,12 @@ export class RapidProOfflineFlow {
         }
         case "results": {
           output = output.replace(fullMatch, this.flowResults[fieldName]);
+          break;
+        }
+        case "habit": {
+          if (subfieldName === "weekly_count") {
+            output = output.replace(fullMatch, "" + await this.habitService.getHabitWeeklyCount(fieldName))
+          }
           break;
         }
       }

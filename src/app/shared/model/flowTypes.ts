@@ -16,7 +16,8 @@ export namespace FlowTypes {
     | "habit_list"
     | "task_list"
     | "module_list"
-    | "module_page";
+    | "module_page"
+    | "care_package_list";
 
   // NOTE - most of these types are duplicated in src/data, should eventually refactor to common libs
 
@@ -64,6 +65,10 @@ export namespace FlowTypes {
     flow_type: "module_page";
     rows: Module_pageRow[];
   }
+  export interface Care_package_list extends FlowTypeWithData {
+    flow_type: "care_package_list";
+    rows: CarePackage[];
+  }
 
   export interface Conversation extends RapidProFlowExport.RootObject {}
 
@@ -110,6 +115,7 @@ export namespace FlowTypes {
     main_image_asset: string;
     aim_button_text: string;
     aim_action: string;
+    set_aim_button_text?: string;
     suggestion_button_text?: string;
     launch_flow_type?: string;
     launch_flow_name?: string;
@@ -144,13 +150,14 @@ export namespace FlowTypes {
   /** Format of conversation rows post processing */
   export interface ConversationRow {
     row_id?: string | number;
-    type: "start_new_flow" | "send_message" | "story_message" | "go_to" | "save_value" | "exit" | "mark_as_completed" | "split_random";
+    type: "start_new_flow" | "send_message" | "story_slide" | "go_to" | "save_value" | "exit" | "mark_as_completed" | "split_random";
     from?: string | number;
     condition?: string | number;
     condition_var?: string;
     character?: string;
     message_text: string;
     media?: string;
+    icon?: string;
     choose_multi?: boolean;
     display_as_tick?: boolean;
     ticked_by_default?: boolean;
@@ -188,5 +195,14 @@ export namespace FlowTypes {
     // This is the node to refer to when this row is mentioned as a from in another row.
     // This is updated e.g. when looping through from nodes.
     _rapidProNode?: RapidProFlowExport.Node;
+  }
+
+  export interface CarePackage {
+    id: string;
+    label: string;
+    description?: string;
+    icon_asset?: string;
+    main_image_asset?: string;
+    habit_list: string[];
   }
 }
