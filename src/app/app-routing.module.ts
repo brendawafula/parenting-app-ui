@@ -1,17 +1,19 @@
 import { NgModule } from "@angular/core";
 import { PreloadAllModules, RouterModule, Routes } from "@angular/router";
 import { ThemeEditorComponent } from "src/app/feature/theme/theme-editor/theme-editor.component";
+import { ParentPointsPage } from "./feature/parent-points/parent-points.page";
+import { TourComponent } from "./feature/tour/tour.component";
 
 const FeatureRoutes: Routes = [
   {
     path: "",
-    redirectTo: "module_list",
+    redirectTo: "home",
     pathMatch: "full",
   },
   {
     path: "home",
-    redirectTo: "module_list",
-    pathMatch: "full",
+    loadChildren: () =>
+      import("./feature/home/home.module").then((m) => m.HomePageModule),
   },
   {
     path: "module_list",
@@ -42,8 +44,24 @@ const FeatureRoutes: Routes = [
     loadChildren: () => import("./feature/goals/goals.module").then((m) => m.GoalsPageModule),
   },
   {
+    path: "care-packages",
+    loadChildren: () => import("./feature/care-packages/care-packages.module").then((m) => m.CarePackagesPageModule),
+  },
+  {
+    path: "habit_ideas",
+    loadChildren: () => import("./feature/habit-ideas/habit-ideas.module").then((m) => m.HabitIdeasPageModule)
+  },
+  {
     path: "theme-editor",
     component: ThemeEditorComponent,
+  },
+  {
+    path: "tour/:tourName",
+    component: TourComponent
+  },
+  {
+    path: "parent_points",
+    loadChildren: () => import("./feature/parent-points/parent-points.module").then((m) => m.ParentPointsPageModule)
   },
   /*****************************************************************************************
    * Legacy paths - these should be removed in the future once modules refactored
@@ -56,11 +74,7 @@ const FeatureRoutes: Routes = [
   {
     path: "toolbox/topic/:topicId",
     loadChildren: () => import("./feature/tips/tips.module").then((m) => m.TipsModule),
-  },
-  {
-    path: "care-packages",
-    loadChildren: () => import("./feature/care-packages/care-packages.module").then((m) => m.CarePackagesPageModule),
-  },
+  }
 ];
 
 /** Hardcoded pages, not linked to any feature modules */

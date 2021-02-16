@@ -33,6 +33,8 @@
               }
             ],
             "styles": [
+              "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
+              "./node_modules/intro.js/introjs.css",
               {
                 "input": "src/theme/variables.scss",
                 "inject": true
@@ -46,7 +48,9 @@
                 "inject": true
               }
             ],
-            "scripts": [],
+            "scripts": [
+              "./node_modules/intro.js/intro.js"
+            ],
             "allowedCommonJsDependencies": ["lottie-web", "firebase/app", "@firebase/auth"]
           },
           "configurations": {
@@ -115,7 +119,7 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.js",
-            "styles": [],
+            "styles": [ "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css"],
             "scripts": [],
             "assets": [
               {
